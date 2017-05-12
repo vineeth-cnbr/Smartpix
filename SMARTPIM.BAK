@@ -1,0 +1,2386 @@
+//you can buy a total of 200 items irrespective of phone or accessory
+#include<iostream.h>
+#include<conio.h>
+#include<process.h>
+#include<stdio.h>
+#include<fstream.h>
+#include<string.h>
+#include<dos.h>
+#include<stdlib.h>
+				  //ascii values of special characters
+char hl[3]={196},vl[3]={179},stlc[3]={218},strc[3]={191},sblc[3]={192},sbrc[3]={217}; //single borders
+char tlc=201,trc=187,brc=188,blc=200,dhl=205,dvl=186,arr=175;
+char rj=185,lj=204,cj=206,bj=202,tj=203;
+int number=0,number2=0;        // global flags
+int cno=0;
+int last_pho;  //the total number of phones
+struct cart    //structure containing bought items
+{
+char name[100];
+float price;
+};
+cart c[200];
+class acc      //class containing accessories
+{
+public:
+int ino;
+char item[100];
+float price;
+void getitems()  //function to input details of accessories
+{
+cout<<" Enter the item details:- \n";
+cout<<" Enter the item name: ";
+gets(item);
+cout<<" Enter the price: ";
+cin>>price;
+}
+}a1;
+class mob        //class containing all phones
+{
+public:
+int sno;
+char brand[100];
+char name[100];
+float cam;
+float RAM;
+float price;
+char proc[100];
+int os;
+char OS[100];
+char ver[10];
+float intmem;
+float battery;
+void displayspecs();   //function to  display specs of a phone
+void getphones()       //function to input details of a phone
+{
+cout<<"\n Enter the phone details :- ";
+cout<<"\n Brand: ";
+gets(brand);
+cout<<" Name: ";
+gets(name);
+if(strcmp(brand,"Apple")==0)
+{
+strcpy(OS,"iOS");
+cout<<" iOS version: ";
+gets(ver);
+}
+else
+{
+cout<<" Operating system: \n 1.Android  2.Windows Phone  3.Symbian  4.specify\n ";
+cin>>os;
+if(os==1)
+strcpy(OS,"Android");
+if(os==2)
+strcpy(OS,"Windows Phone");
+if(os==3)
+strcpy(OS,"Symbian");
+if(os==4)
+{
+cout<<" Enter the name of the operating system: ";
+gets(OS);
+}
+cout<<" OS version: ";
+gets(ver);
+}
+cout<<" Camera: ";
+cin>>cam;
+cout<<" RAM: ";
+cin>>RAM;
+cout<<" processor: ";
+gets(proc);
+cout<<" Internal Memory: ";
+cin>>intmem;
+cout<<" battery Backup(in mAh): ";
+cin>>battery;
+cout<<" Price: ";
+cin>>price;
+}
+}m1;
+class p
+{
+public:
+char pa[20];
+int n;
+};
+union REGS in,out;
+int callmouse()
+{
+in.x.ax=1;
+int86(51,&in,&out);
+return 1;
+}
+void mouseposi(int &xpos,int &ypos,int &click)
+{
+in.x.ax=3;
+int86(51,&in,&out);
+click=out.x.bx;
+xpos=out.x.cx;
+ypos=out.x.dx;
+}
+int mousehide()
+{
+in.x.ax=2;
+int86(51,&in,&out);
+return 1;
+}
+void setposi(int &xpos,int &ypos)
+{
+in.x.ax=4;
+in.x.cx=xpos;
+in.x.dx=ypos;
+int86(51,&in,&out);
+}
+void restrictmouseptr(int x1,int y1,int x2,int y2)
+{
+in.x.ax=7;
+in.x.cx=x1;
+in.x.dx=x2;
+int86(51,&in,&out);
+in.x.ax=8;
+in.x.cx=y1;
+in.x.dx=y2;
+int86(51,&in,&out);
+}
+
+void start();
+void main();
+void insert();
+void del();
+void modify();
+void showphones();
+void order();
+void password();
+void showitems();
+void orderi();
+void manager()         //the manager or the settings function
+{
+char  c;
+cout<<"\n What do you want to perform? (press 0 to go back at any menu)";
+cout<<"\n 1.Insert a phone "<<endl;
+cout<<" 2.Delete a phone "<<endl;
+cout<<" 3.Modify a phone "<<endl;
+cout<<" 4.Change password "<<endl;
+cout<<" 5.Show phones \n";
+cout<<" 6.Add an accessory \n";
+cout<<" 7.Delete an accessory \n";
+cout<<" 8.Modify an accessory \n";
+cout<<" 9.Show all accessories \n ";
+c=getch();
+switch(c)
+{
+case '0':
+main();
+break;
+case '1':
+insert();
+break;
+case '2':
+del();
+break;
+case '3':
+order();
+modify();
+break;
+case '4':
+password();
+manager();
+break;
+case '5':
+order();
+showphones();
+manager();
+break;
+case '6':
+				//case adds an accessory
+fstream file("acc",ios::binary|ios::in|ios::out|ios::ate);
+a1.getitems();
+file.write((char *)&a1,sizeof(a1));
+file.close();
+orderi();
+manager();
+
+break;
+
+case '7':
+				//case deletes an accessory
+orderi();
+showitems();
+int n;
+float max=0;
+fstream f1("acc",ios::binary|ios::in|ios::out);
+fstream f2("temp",ios::binary|ios::beg|ios::in|ios::out);
+cout<<"\n Enter the accessory you want to delete: ";
+cin>>n;
+while(f1)
+{
+f1.read((char *)&a1,sizeof(a1));
+max+=sizeof(a1);
+if(f1.tellg()==(max-sizeof(a1)))
+break;
+
+if(a1.ino!=n)
+f2.write((char *)&a1,sizeof(a1));
+}
+f1.close();
+f2.close();
+remove("acc");
+rename("temp","acc");
+orderi();
+showitems();
+manager();
+
+break;
+
+case '8':
+				//case modifies an accessory
+int m;
+float loc;
+orderi();
+showitems();
+fstream file1("acc",ios::binary|ios::in|ios::out);
+cout<<" Enter the item no. you want to modify: ";
+cin>>m;
+cout<<"\n";
+if(m==0)
+manager();
+if(m==1)
+loc=(m-1)*sizeof(a1);
+else
+loc=m*sizeof(a1);
+a1.getitems();
+file1.seekp(loc);
+file1.write((char *)&a1,sizeof(a1));
+file1.close();
+getch();
+manager();
+
+break;
+
+case '9':
+
+orderi();
+showitems();
+manager();
+break;
+
+default:
+cout<<" Wrong number! Try again \n "<<endl;
+manager();
+}
+
+}
+void showitems()//Function to display all accessories in manager/settings
+{
+
+fstream file("acc",ios::binary|ios::in|ios::out|ios::beg);
+cout<<" Displaying all items "<<endl;
+file.seekg(sizeof(a1));
+while(file.read((char *)&a1,sizeof(a1)))
+{
+
+cout<<" "<<a1.ino<<" "<<a1.item<<" "<<a1.price<<endl;
+}
+file.close();
+getch();
+
+}
+void orderi()//Function to assign the serial number of accessories
+{
+int i=0;
+float loc;
+fstream file("acc",ios::binary|ios::in|ios::out|ios::beg);
+file.seekg(0,ios::beg);
+while(file)
+{
+file.read((char *)&a1,sizeof(a1));
+a1.ino=(i++)+1;
+loc=i*sizeof(a1);
+file.seekp(loc);
+file.write((char *)&a1,sizeof(a1));
+}
+file.close();
+}
+
+void order()//Function to assign the serial number of phones
+{
+fstream file("pho",ios::binary|ios::in|ios::out|ios::beg);
+int i=0;
+float loc;
+file.seekg(0,ios::beg);
+while(file)
+{
+file.read((char *)&m1,sizeof(m1));
+m1.sno=(i++)+1;
+loc=i*sizeof(m1);
+file.seekp(loc);
+file.write((char *)&m1,sizeof(m1));
+}
+file.close();
+}
+void showphones()//Function to display all accessories in manager/settings
+{
+fstream file("pho",ios::binary|ios::in|ios::out|ios::beg);
+cout<<" Displaying all the phones "<<endl;
+file.seekg(sizeof(m1));
+while(file.read((char *)&m1,sizeof(m1)))
+{
+cout<<" "<<m1.sno<<" "<<m1.brand<<" "<<m1.name<<endl;
+}
+file.close();
+getch();
+}
+void insert()//Function that insert phones
+{
+fstream file("pho",ios::binary|ios::in|ios::out|ios::ate);
+m1.getphones();
+file.write((char*)&m1,sizeof(m1));
+file.close();
+order();
+showphones();
+manager();
+}
+void del()//function that deletes phones
+{
+showphones();
+int n;
+float max=0;
+fstream file("pho",ios::binary|ios::in|ios::out);
+fstream file1("temp",ios::binary|ios::beg|ios::in|ios::out);
+cout<<"\n Enter the phone you want to delete: ";
+cin>>n;
+while(file)
+{
+file.read((char *)&m1,sizeof(m1));
+max+=sizeof(m1);
+if(file.tellg()==(max-sizeof(m1)))
+break;
+if(m1.sno!=n)
+file1.write((char *)&m1,sizeof(m1));
+}
+file.close();
+file1.close();
+remove("pho");
+rename("temp","pho");
+order();
+showphones();
+manager();
+}
+void modify()//Function that modifies existing phone
+{
+int n;
+float loc=0;
+showphones();
+fstream file("pho",ios::in|ios::out|ios::binary);
+cout<<" Enter the phone serial number to be modified: ";
+cin>>n;
+if(n==0)
+manager();
+loc=(n)*sizeof(m1);
+m1.getphones();
+file.seekp(loc);
+file.write((char *)&m1,sizeof(m1));
+file.close();
+getch();
+manager();
+}
+void password()//function that changes the existing password
+{
+p p1;
+char c;
+fstream f1("p4",ios::beg|ios::in|ios::out);
+cout<<"\n Enter the new password \n ";
+for(int i=0;c!='\r';i++)
+{
+p1.pa[i]=getch();
+c=p1.pa[i];
+if(c=='\b')
+{
+p1.pa[i]='\0';
+cout<<"\b \b";
+}
+else if(c=='\r');
+else
+{
+cout<<'*';
+}
+
+
+}
+p1.pa[--i]='\0';
+
+f1.seekp(0,ios::beg);
+f1.write((char *)&p1,sizeof(p1));
+f1.close();
+cout<<"\n Your password has been changed ";
+}
+void viewcart();
+void cart(char cname[],float price);
+void displayacc();
+void displaypho();
+void compare();
+void search();
+void search_list();
+void search_name();
+void search_os();
+void brand_table(char n[]);
+void os_table(char n[]);
+void budget();
+void brand();
+void budget_table(long int a, long int b);
+void shop();
+void main()                                           //main() started
+{
+
+if(number2==0)
+{start();number2++;}
+clrscr();
+int i,pos=7;
+char ch='\0';
+int j;
+textmode(C40);
+gotoxy(1,2);cout<<tlc;for(i=2;i<=39;i++)cout<<dhl;cout<<trc;
+for(i=3;i<=23;i++){gotoxy(1,i);cout<<dvl;}
+gotoxy(1,24);cout<<blc;for(i=2;i<=39;i++)cout<<dhl;cout<<brc;
+for(i=3;i<=23;i++){gotoxy(40,i);cout<<dvl;}
+gotoxy(18,2);cout<<tj;gotoxy(23,2);cout<<tj;
+gotoxy(18,3);cout<<dvl;gotoxy(23,3);cout<<dvl;
+gotoxy(17,1);
+cout<<tlc;for(i=1;i<=6;i++)cout<<dhl;cout<<trc;
+gotoxy(17,2);
+cout<<rj<<" MENU "<<lj;
+gotoxy(17,3);
+cout<<blc;for(i=1;i<=6;i++)cout<<dhl;cout<<brc;
+gotoxy(19,7);cout<<"SHOP";
+gotoxy(17,9);cout<<"SETTINGS";
+gotoxy(18,11);cout<<"CREDITS";
+gotoxy(19,13);cout<<"EXIT";
+gotoxy(13,pos);cout<<arr;
+callmouse();
+int x,y,cl;
+restrictmouseptr(3,4,632,93);
+setposi(136,24);
+do
+{
+gotoxy(1,1);
+mouseposi(x,y,cl);
+
+if((x>=137)&&(x<=183)&&(y>=24)&&(y<=31)&&(cl==1))
+pos=7;
+if((x>=120)&&(x<=199)&&(y>=32)&&(y<=39)&&(cl==1))
+pos=9;
+if((x>=128)&&(x<=199)&&(y>=40)&&(y<=47)&&(cl==1))
+pos=11;
+if((x>=136)&&(x<=183)&&(y>=48)&&(y<=55)&&(cl==1))
+pos=13;
+
+if(kbhit()!=0)
+{
+ch=getch();
+gotoxy(13,pos);cout<<" ";
+if(pos!=7)
+{
+	if(ch==72)
+	{
+	pos-=2;
+	gotoxy(13,pos);cout<<arr;
+	}
+}
+else
+{
+	if(ch==72)
+	{
+	pos=13;
+	gotoxy(13,pos);cout<<arr;
+	}
+}
+if(pos!=13)
+{
+	if(ch==80)
+	{
+	pos+=2;
+	gotoxy(13,pos);cout<<arr;
+	}
+}
+else
+{
+	if(ch==80)
+	{
+	pos=7;
+	gotoxy(13,pos);cout<<arr;
+	}
+}
+}//if(kbhit())
+
+}while((ch!='\r')&&(cl==0));
+mousehide();
+switch(pos)
+{
+case 7:
+shop();
+break;
+
+case 9:
+textmode(C80);
+clrscr();
+p p2;
+char str[100],c='\0',ch='y';
+if(number==0)
+{
+cout<<" Welcome to the manager zone, before procedding,";
+while(ch=='y')
+{
+c='\0';
+cout<<"\n Please enter the password: ";
+for(i=0;c!='\r';i++)
+{
+str[i]=getch();
+c=str[i];
+if(c=='\b')
+{
+str[i]='\0';
+str[i-1]='\0';
+cout<<"\b \b";
+i-=2;
+}
+else if(c=='\r');
+else
+{
+cout<<'*';
+}
+}
+str[--i]='\0';
+fstream f1("p4",ios::binary|ios::beg|ios::out|ios::in);
+f1.read((char *)&p2,sizeof(p2));
+
+f1.close();
+if(strcmp(str,p2.pa)==0)
+{
+::number++;
+cout<<"\n Continue"<<endl;
+manager();
+break;
+}
+else
+cout<<"\n Sorry "<<endl;
+cout<<"\n Do you want to retry?(y/n) "<<endl;
+ch=getch();
+if(ch=='n')
+main();
+else
+ch='y';
+}
+}
+else
+{
+cout<<" Welcome to the manager zone \n";
+manager();
+}
+break;
+case 11:
+clrscr();
+textmode(C80);
+cout<<"We thank our Computer Science teacher for the inspiration and knowledge.\n";
+
+getch();
+clrscr();
+char str1[50];
+strcpy(str1,"PROGRAM DONE BY PRITHVI DALAL AND VINEETH CHANDRAN");
+for(j=0;str1[j]!='\0';j++){
+for(i=1;i<=13;i++){
+if(str1[j]!='\0')
+{
+gotoxy(j+2,i);cout<<str1[j];delay(10);gotoxy(j+2,i-1);cout<<" ";}
+}}
+strcpy(str1,"CLASS  : XII    SEC  : A");
+for(j=0;str1[j]!='\0';j++){
+for(i=15;i<=17;i++)
+{
+gotoxy(j+2,i);cout<<str1[j];delay(10);gotoxy(j+2,i-1);cout<<" ";
+}
+}
+gotoxy(79,24);
+delay(2000);
+main();
+case 13:
+exit(0);
+}
+getch();
+} 		    								        //main() ended
+
+
+void displaypho()									//displaypho() open
+{              //Function that displays phones in a table
+int l=12;
+gotoxy(1+l,1);cout<<tlc;
+
+for(int i=2;i<=52;i++)
+{
+gotoxy(i+l,1);cout<<dhl;
+gotoxy(i+l,3);cout<<dhl;
+}
+gotoxy(10+l,1);cout<<tj;
+gotoxy(11+34+l,1);cout<<tj;
+gotoxy(53+l,1);cout<<trc;
+
+for(i=2;i<=3;i++)
+{
+gotoxy(1+l,i);cout<<dvl;
+gotoxy(11+36+6+l,i);cout<<dvl;
+}
+gotoxy(53+l,3);cout<<rj;
+gotoxy(1+l,3);cout<<lj;
+gotoxy(3+l,2);
+cout<<"Sl.no";
+gotoxy(10+l,2);cout<<dvl;
+gotoxy(10+l,3);cout<<cj;
+gotoxy(12+l,2);
+cout<<"Name";
+gotoxy(11+34+l,2);cout<<dvl;
+gotoxy(11+34+l,3);cout<<cj;
+gotoxy(11+36+l,2);
+cout<<"Price\n";
+int p=4;
+fstream file("pho",ios::binary|ios::in|ios::out);
+file.seekg(sizeof(m1));
+	while(file.read((char *)&m1,sizeof(m1)))
+	{
+	gotoxy(1+l,p);cout<<dvl;
+	gotoxy(11+36+6+l,p);cout<<dvl;
+	gotoxy(10+l,p);cout<<dvl;
+	gotoxy(11+34+l,p);cout<<dvl;
+	gotoxy(4+l,p);
+	cout<<m1.sno;
+	gotoxy(12+l,p);
+	cout<<m1.brand<<" "<<m1.name;
+	gotoxy(11+36+l,p);
+	cout<<m1.price;
+	p++;
+	delay(100);
+	}
+gotoxy(1+l,p);cout<<blc;
+for(i=2;i<=52;i++)
+{
+gotoxy(i+l,p);
+cout<<dhl;
+}
+gotoxy(53+l,p);cout<<brc;
+gotoxy(10+l,p);cout<<bj;
+gotoxy(11+34+l,p);cout<<bj;
+file.clear();
+file.close();
+::last_pho=p-1;
+}
+
+void shop()                      		                //shop() open
+{       //main shopping function
+clrscr();
+char ch='\0';
+int i,pos=5;
+textmode(C40);
+gotoxy(1,2);cout<<tlc;for(i=2;i<=39;i++)cout<<dhl;cout<<trc;
+for(i=3;i<=23;i++){gotoxy(1,i);cout<<dvl;}
+gotoxy(1,24);cout<<blc;for(i=2;i<=39;i++)cout<<dhl;cout<<brc;
+for(i=3;i<=23;i++){gotoxy(40,i);cout<<dvl;}
+gotoxy(18,2);cout<<tj;gotoxy(23,2);cout<<tj;
+gotoxy(18,3);cout<<dvl;gotoxy(23,3);cout<<dvl;
+gotoxy(17,1);
+cout<<tlc;for(i=1;i<=6;i++)cout<<dhl;cout<<trc;
+gotoxy(17,2);
+cout<<rj<<" SHOP "<<lj;
+gotoxy(17,3);
+cout<<blc;for(i=1;i<=6;i++)cout<<dhl;cout<<brc;
+gotoxy(14,5);cout<<"Phones";
+gotoxy(14,7);cout<<"Accessories";
+gotoxy(14,9);cout<<"Compare Phones!";
+gotoxy(14,11);cout<<"View Cart";
+gotoxy(14,13);cout<<"Back To Main Menu ";
+gotoxy(12,5);cout<<arr;
+for(i=0;ch!='\r';i++)
+{
+gotoxy(39,24);
+ch=getch();
+gotoxy(12,pos);cout<<" ";
+if(pos!=5)
+{
+	if(ch==72)
+	{
+	pos-=2;
+	gotoxy(12,pos);cout<<arr;
+	}
+}
+else
+{
+	if(ch==72)
+	{
+	pos=13;
+	gotoxy(12,pos);cout<<arr;
+	}
+}
+if(pos!=13)
+{
+	if(ch==80)
+	{
+	pos+=2;
+	gotoxy(12,pos);cout<<arr;
+	}
+}
+else
+{
+	if(ch==80)
+	{
+	pos=5;
+	gotoxy(12,pos);cout<<arr;
+	}
+}
+}
+textmode(C80);
+switch(pos)
+{
+case 13:
+main();
+break;
+case 5:
+search();
+break;
+case 7:
+displayacc();
+break;
+case 9:
+compare();
+break;
+case 11:
+viewcart();
+break;
+}
+shop();
+}                                                         //shop() close
+void compare()//Function to compare two phones            //compare() open
+{
+clrscr();
+displaypho();
+mob m2,m3;
+int p[2];
+char c;
+int pos=4;
+int last=::last_pho;
+
+
+for(int j=0,a=1;j<=2;j+=2,a++)
+{
+gotoxy(2,last+3+j);cout<<" Select "<<a<<" Phone";
+c='\0';
+gotoxy(10-j,4);cout<<arr;
+pos=4;
+		for(int i=0;c!='\r';i++)
+		{
+
+		gotoxy(79,24);
+		c=getch();
+		gotoxy(10-j,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(c==72)
+			{
+			pos--;
+			gotoxy(10-j,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(c==72)
+			{
+			pos=last;
+			gotoxy(10-j,pos);cout<<arr;
+			}
+		}
+		if(pos!=last)
+		{
+			if(c==80)
+			{
+			pos++;
+			gotoxy(10-j,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(c==80)
+			{
+			pos=4;
+			gotoxy(10-j,pos);cout<<arr;
+			}
+		}
+		}
+
+p[a]=pos-3;
+}
+
+delay(500);
+clrscr();
+textmode(C40);
+gotoxy(12,13);
+cout<<"   PROCESSING: ";
+int i,k;
+for(i=0;i<5;i++)
+{
+delay(100);
+gotoxy(28,13);
+cout<<"/";
+cout<<". ";
+delay(100);
+gotoxy(28,13);
+cout<<"\\";
+cout<<"..";
+}
+
+clrscr();
+textmode(C80);
+fstream file("pho",ios::binary|ios::out|ios::in|ios::beg);
+while(file.read((char *)&m1,sizeof(m1)))
+{
+if(m1.sno==p[1])
+m2=m1;
+if(m1.sno==p[2])
+m3=m1;
+}
+file.clear();
+file.close();
+gotoxy(1,1);cout<<tlc;
+for(i=2;i<=79;i++)
+{
+gotoxy(i,1);
+cout<<dhl;
+}
+gotoxy(31,1);cout<<tj;
+gotoxy(57,1);cout<<tj;
+gotoxy(80,1);cout<<trc;
+for(i=2;i<=15;i++)
+{
+gotoxy(80,i);cout<<dvl;
+}
+gotoxy(1,16);cout<<blc;
+for(i=2;i<=80;i++)
+{
+gotoxy(i,16);
+cout<<dhl;
+}
+gotoxy(31,16);cout<<bj;
+gotoxy(57,16);cout<<bj;
+gotoxy(80,16);cout<<brc;
+for(i=2;i<=15;i++)
+{
+gotoxy(1,i);
+cout<<dvl;
+gotoxy(31,i);
+cout<<dvl;
+gotoxy(57,i);
+cout<<dvl;
+}
+for(i=2;i<=14;i+=2)
+{
+gotoxy(26,i);
+cout<<":";
+}
+gotoxy(2,2);cout<<" Phone";gotoxy(33,2);cout<<m2.name;gotoxy(59,2);cout<<m3.name;
+gotoxy(1,3);cout<<lj;for(i=1;i<=29;i++)cout<<dhl;cout<<cj;for(i=0;i<=24;i++)cout<<dhl;cout<<cj;for(i=0;i<=21;i++)cout<<dhl;cout<<rj;
+gotoxy(2,4);cout<<" Brand";gotoxy(33,4);cout<<m2.brand;gotoxy(59,4);cout<<m3.brand;
+gotoxy(2,6);cout<<" Camera";gotoxy(33,6);cout<<m2.cam<<"MP";gotoxy(59,6);cout<<m3.cam<<"MP";
+gotoxy(2,8);cout<<" Operating System";gotoxy(33,8);cout<<m2.OS<<" "<<m2.ver;gotoxy(59,8);cout<<m3.OS<<" "<<m3.ver;
+gotoxy(2,10);cout<<" Memory(RAM,Internal)";gotoxy(33,10);cout<<m2.RAM<<","<<m2.intmem;gotoxy(59,10);cout<<m3.RAM<<","<<m3.intmem;
+gotoxy(2,12);cout<<" Battery(mAh)";gotoxy(33,12);cout<<m2.battery;gotoxy(59,12);cout<<m3.battery;
+gotoxy(2,14);cout<<" Processor";gotoxy(33,14);
+	if(strlen(m2.proc)>=25)
+	{
+		for(i=0;i<24;i++)
+		cout<<m2.proc[i];
+		gotoxy(33,15);
+		for(i=24;i<=strlen(m2.proc);i++)
+		cout<<m2.proc[i];
+	}
+	else
+	{
+	cout<<m2.proc;
+	}
+gotoxy(59,14);
+	if(strlen(m3.proc)>=20)
+	{
+		for(i=0;i<21;i++)
+		cout<<m3.proc[i];
+		gotoxy(59,15);
+		for(i=21;i<=strlen(m3.proc);i++)
+		cout<<m3.proc[i];
+	}
+	else
+	{
+	cout<<m3.proc;
+	}
+getch();
+gotoxy(2,18);
+int n;
+int pos1=2;
+char ch='\0';
+cout<<"Which phone do you want to buy? \n";
+gotoxy(4,19);cout<<m2.name;gotoxy(33,19);cout<<m3.name;gotoxy(62,19);cout<<"Neither ";
+gotoxy(pos1,19);cout<<arr;
+for(i=1;ch!='\r';i++)
+{
+gotoxy(79,24);
+ch=getch();
+gotoxy(pos1,19);cout<<" ";
+if(ch==75)
+{
+	if(pos1==2)
+	pos1=60;
+	else if(pos1==31)
+	pos1=2;
+	else
+	pos1=31;
+}
+if(ch==77)
+{
+	if(pos1==2)
+	pos1=31;
+	else if(pos1==31)
+	pos1=60;
+	else
+	pos1=2;
+}
+gotoxy(pos1,19);cout<<arr;
+}
+
+
+if(pos1==2)
+cart(m2.name,m2.price);
+else if(pos1==31)
+cart(m3.name,m3.price);
+else
+shop();
+
+}                                                        // compare() close
+void viewcart()//Displays items put in the cart          // viewcart() open
+{
+
+char sigma=228;
+float total=0;
+if(cno!=0)
+{
+clrscr();
+gotoxy(10,1);cout<<tlc;for(int i=1;i<=40;i++)cout<<dhl;cout<<trc;
+gotoxy(10,2);cout<<dvl;gotoxy(29,2);cout<<"CART";gotoxy(51,2);cout<<dvl;
+gotoxy(10,3);cout<<lj;for(i=1;i<=40;i++)cout<<dhl;cout<<rj;gotoxy(44,3);cout<<tj;
+gotoxy(10,4);cout<<dvl;cout<<"NAME OF ITEM";gotoxy(44,4);cout<<dvl<<"PRICE "<<dvl;
+gotoxy(10,5);cout<<lj;for(i=1;i<=40;i++)cout<<dhl;cout<<rj;gotoxy(44,5);cout<<cj;
+for(i=1;i<=cno;i++)
+{
+gotoxy(10,i+5);cout<<dvl;gotoxy(44,i+5);cout<<dvl;gotoxy(51,i+5);cout<<dvl;
+gotoxy(11,i+5);cout<<c[i].name;gotoxy(45,5+i);cout<<c[i].price;
+total+=c[i].price;
+if(i==cno)
+{gotoxy(10,i+6);cout<<blc;for(int j=1;j<=40;j++)cout<<dhl;gotoxy(44,i+6);cout<<bj;gotoxy(51,i+6);cout<<brc<<"  ";}
+}
+
+int p=i+10;
+gotoxy(3,p);cout<<"Go back to shop";gotoxy(40,p);cout<<"Remove Last Item";
+gotoxy(3,p+1);cout<<"Remove All Items";gotoxy(40,p+1);cout<<"Proceed To billing";
+
+
+char s='\0';
+int a,pos=2,posy=p;
+gotoxy(pos,p);cout<<arr;
+for(a=1;s!='\r';a++)
+{
+gotoxy(79,24);
+s=getch();
+gotoxy(pos,posy);cout<<" ";
+	if(s==72||s==80)
+	{
+		if(posy==p)
+		posy=p+1;
+		else
+		posy=p;
+	gotoxy(pos,posy);cout<<arr;
+	}
+	if(s==75||s==77)
+	{
+		if(pos==2)
+		pos=39;
+		else
+		pos=2;
+	gotoxy(pos,posy);cout<<arr;
+	}
+}
+
+if(pos==2)
+{
+	if(posy==p)
+	shop();
+	if(posy==p+1)
+	{
+	cno=0;
+	viewcart();
+	}
+}
+if(pos==39)
+{
+	if(posy==p)
+	{
+	cno--;
+	viewcart();
+	}
+	if(posy==p+1)
+	{
+	gotoxy(10,i+5);cout<<lj;for(int j=1;j<=40;j++)cout<<dhl;gotoxy(44,i+5);cout<<cj;gotoxy(51,i+5);cout<<rj;
+	gotoxy(10,i+6);cout<<dvl;for(j=1;j<=40;j++)cout<<" ";gotoxy(10,i+6);cout<<dvl<<"TOTAL("<<sigma<<")";gotoxy(44,i+6);cout<<dvl;gotoxy(45,i+6);cout<<total;gotoxy(51,i+6);cout<<dvl;
+	gotoxy(10,i+7);cout<<blc;for(j=1;j<=40;j++)cout<<dhl;gotoxy(44,i+7);cout<<bj;gotoxy(51,i+7);cout<<brc;
+	cno=0;
+	gotoxy(26,i+9);cout<<"THANK YOU!";
+	gotoxy(3,p);cout<<"                 ";gotoxy(40,p);cout<<"                   ";
+	gotoxy(3,p+1);cout<<"                 ";gotoxy(40,p+1);cout<<"                    ";
+	}
+}
+getch();
+}
+else
+{
+clrscr();
+cout<<"CART EMPTY, going back";
+delay(2000);
+shop();
+}
+}                                                        //viewcart() close
+//Function to add items in the cart
+void cart(char cname[],float price)                      //cart() close
+{
+cno++;
+strcpy(c[cno].name,cname);
+c[cno].price=price;
+}
+
+//Different methods of buying the phone
+void search()											//search() open
+{
+clrscr();
+int s=7;
+char ch='\0';
+textmode(C40);
+int i;
+gotoxy(1,2);cout<<tlc;for(i=2;i<=39;i++)cout<<dhl;cout<<trc;
+for(i=3;i<=23;i++){gotoxy(1,i);cout<<dvl;}
+gotoxy(1,24);cout<<blc;for(i=2;i<=39;i++)cout<<dhl;cout<<brc;
+for(i=3;i<=23;i++){gotoxy(40,i);cout<<dvl;}
+gotoxy(16,1);cout<<tlc<<dhl<<dhl<<dhl<<dhl<<dhl<<dhl<<dhl<<dhl<<trc;
+gotoxy(16,2);cout<<rj<<" SEARCH "<<lj;
+gotoxy(16,3);cout<<blc<<dhl<<dhl<<dhl<<dhl<<dhl<<dhl<<dhl<<dhl<<brc;
+
+gotoxy(19,7);cout<<"List";
+gotoxy(19,9);cout<<"Name";
+gotoxy(19,11);cout<<"Brand";
+gotoxy(13,13);cout<<"Operating system";
+gotoxy(16,15);cout<<"Your budget";
+gotoxy(19,17);cout<<"Back";
+gotoxy(12,7);cout<<arr;
+for(i=0;ch!='\r';i++)
+{
+gotoxy(39,24);
+ch=getch();
+gotoxy(12,s);cout<<" ";
+if(s!=7)
+{
+	if(ch==72)
+	{
+	s-=2;
+	gotoxy(12,s);cout<<arr;
+	}
+}
+else
+{
+	if(ch==72)
+	{
+	s=17;
+	gotoxy(12,s);cout<<arr;
+	}
+}
+if(s!=17)
+{
+	if(ch==80)
+	{
+	s+=2;
+	gotoxy(12,s);cout<<arr;
+	}
+}
+else
+{
+	if(ch==80)
+	{
+	s=7;
+	gotoxy(12,s);cout<<arr;
+	}
+}
+}
+textmode(C80);
+switch(s)
+{
+case 17:
+shop();
+break;
+case 7:
+search_list();
+break;
+case 9:
+search_name();
+break;
+case 11:
+brand();
+break;
+case 13:
+search_os();
+break;
+case 15:
+budget();
+}
+search();
+}											   		  //search() close
+//Displays the whole list of phones
+void search_list()                                    //search_list() open
+{
+char ch;
+int pos;
+mob M;
+clrscr();
+displaypho();
+int l= ::last_pho;
+gotoxy(2,l+3);cout<<" Select a phone";
+ch='\0';
+gotoxy(10,4);cout<<arr;
+pos=4;
+		for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		gotoxy(10,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(10,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=l;
+			gotoxy(10,pos);cout<<arr;
+			}
+		}
+		if(pos!=l)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(10,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=4;
+			gotoxy(10,pos);cout<<arr;
+			}
+		}
+		}
+textmode(C80);
+fstream file("pho",ios::binary|ios::out|ios::in|ios::beg);
+while(file.read((char *)&M,sizeof(M)))
+{
+if(M.sno==(pos-3))
+	m1=M;
+}
+file.clear();
+file.close();
+m1.displayspecs();
+} 						     				 //search_list() close
+//Buy Phones based on a name search
+void search_name()						     //search_name() open
+{
+clrscr();
+int pos,flag=0;
+char n[100];
+char ch='y';
+while(ch=='y')
+{
+fstream file("pho",ios::binary|ios::in|ios::out|ios::beg|ios::ate);
+gotoxy(1,2);cout<<"Enter the mobile name to be searched - "<<endl;
+gotoxy(1,4);gets(n);
+file.seekg(0,ios::beg);
+file.seekp(0,ios::beg);
+while(!file.eof())
+{
+file.read((char *)&m1,sizeof(m1));
+if(strcmpi(n,m1.name)==0)
+{
+cout<<"Mobile found!"<<endl;
+cout<<"It's specifications are loading.."<<endl;
+delay(500);
+
+m1.displayspecs();
+
+flag=1;
+ch='n';
+break;
+}
+}
+file.clear();
+if(flag==0)
+{
+clrscr();
+gotoxy(2,2);cout<<"Search Unsuccessful!";
+gotoxy(2,3);cout<<"Do you want to try again?";
+char choice='\0';
+gotoxy(2,5);cout<<"Yes";gotoxy(30,5);cout<<"No";
+int pos1=1;
+gotoxy(pos1,5);cout<<arr;
+for(int i=1;choice!='\r';i++)
+{
+gotoxy(79,24);
+choice=getch();
+gotoxy(pos1,5);cout<<" ";
+
+	if(choice==75||choice==77)
+	{
+
+		if(pos1==1)
+		{pos1=29;
+		ch='n';
+		}
+		else
+		{
+		gotoxy(29,5);cout<<" ";
+		pos1=1;
+		ch='y';}
+
+		gotoxy(pos1,5);cout<<arr;
+	}
+}
+clrscr();
+}
+}
+}												//search_name() close
+//Search phones based on an OS
+void search_os()								//search_os() open
+{
+textmode(C80);
+int pos=4;
+char ch='\0';
+char n[50];
+clrscr();
+cout<<endl<<"  Which operating system do you like to choose?"<<endl;
+gotoxy(3,4);cout<<"Android";
+gotoxy(3,5);cout<<"Windows";
+gotoxy(3,6);cout<<"iOs";
+gotoxy(3,7);cout<<"Symbian";
+gotoxy(3,8);cout<<"Other";
+gotoxy(3,9);cout<<"GO BACK!";
+gotoxy(1,4);cout<<arr;
+for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		if(ch!='\r')
+		{
+		gotoxy(1,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=9;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		if(pos!=9)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=4;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		}
+		}
+
+if(pos==4)
+{
+	strcpy(n,"Android");
+	os_table(n);
+}
+else if(pos==5)
+{
+	strcpy(n,"Windows Phone");
+	os_table(n);
+}
+else if(pos==6)
+{
+	strcpy(n,"iOs");
+	os_table(n);
+}
+else if(pos==7)
+{
+	strcpy(n,"Symbian");
+	os_table(n);
+}
+else if(pos==8)
+{
+	clrscr();
+	cout<<"Enter the operating system name-"<<endl;
+	gets(n);
+	os_table(n);
+}
+else
+	search();
+}												      //search_os() close
+
+//Displays a table with phones of a particular OS
+void os_table(char n[])                         //os_table() open
+{
+clrscr();
+char A[20];
+for(int i=0;i<20;i++)
+	A[i]=0;
+fstream file;
+file.open("pho",ios::binary|ios::in|ios::out|ios::beg|ios::ate);
+file.seekg(sizeof(mob));
+file.seekp(sizeof(mob));
+gotoxy(13,1);cout<<tlc;
+gotoxy(22,1);cout<<tj;
+gotoxy(13,2);cout<<dvl;
+for(i=14;i<=57;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(21,1);cout<<tj;
+gotoxy(57,1);cout<<tj;
+gotoxy(65,1);cout<<trc;
+for(i=2;i<=3;i++)
+{
+gotoxy(65,i);cout<<dvl;
+}
+gotoxy(13,3);cout<<lj;
+gotoxy(65,3);cout<<rj;
+gotoxy(57,3);cout<<cj;
+gotoxy(21,3);cout<<cj;
+gotoxy(21,2);cout<<dvl;
+gotoxy(57,2);cout<<dvl;
+for(i=58;i<65;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(15,2);cout<<"S.No";
+gotoxy(23,2);cout<<"Name";
+gotoxy(59,2);cout<<"Price";
+int p=4;
+while(file.read((char *)&m1,sizeof(m1)))
+{
+
+	if(strcmpi(n,m1.OS)==0)
+	{
+	gotoxy(13,p);cout<<dvl;
+	gotoxy(21,p);cout<<dvl;
+	gotoxy(57,p);cout<<dvl;
+	gotoxy(65,p);cout<<dvl;
+	gotoxy(15,p);cout<<p-3;
+	gotoxy(23,p);cout<<m1.brand<<" "<<m1.name;
+	gotoxy(59,p);cout<<m1.price;
+	A[p]=m1.sno;
+	p++;
+	delay(300);
+	}
+}
+file.clear();
+file.close();
+if(p!=4)
+{
+gotoxy(13,p);cout<<blc;
+for(i=14;i<57;i++)
+{
+gotoxy(i,p),cout<<dhl;
+}
+gotoxy(21,p);cout<<bj;
+gotoxy(57,p);cout<<bj;
+for(i=58;i<65;i++)
+{
+gotoxy(i,p);cout<<dhl;
+}
+cout<<brc;
+
+if(strcmpi(n,"Windows Phone")==0)
+{
+gotoxy(2,p+5);cout<<"Select 1 "<<n;
+}
+else{
+gotoxy(2,p+5);cout<<"Select 1 "<<n<<" phone..";
+}
+char ch='\0';
+gotoxy(11,4);cout<<arr;
+int pos=4;
+		for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		gotoxy(11,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=p-1;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		if(pos!=p-1)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=4;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		}
+textmode(C80);
+fstream file("pho",ios::binary|ios::out|ios::in|ios::beg);
+file.seekg(0,ios::beg);
+file.seekp(0,ios::beg);
+while(file)
+{
+file.read((char *)&m1,sizeof(m1));
+if(A[pos]==m1.sno)
+	m1.displayspecs();
+}
+file.clear();
+file.close();
+}
+else
+{
+clrscr();
+cout<<endl<<"  There are no phones available of this operating system"<<endl;
+cout<<endl<<"  Going back..";
+delay(2000);
+search();
+}
+}						 		  			  		 //os_table() close
+//Search Phones based on budget of the phone
+void budget()										 //budget() open
+{
+clrscr();
+int pos=5;
+char ch='\0';
+gotoxy(2,2);cout<<"Search by your budget- ";
+
+
+gotoxy(3,5);cout<<"Less than 10000Rs";
+gotoxy(3,6);cout<<"10000Rs-20000Rs";
+gotoxy(3,7);cout<<"20000Rs-30000Rs";
+gotoxy(3,8);cout<<"30000Rs-40000Rs";
+gotoxy(3,9);cout<<"40000Rs-50000Rs";
+gotoxy(3,10);cout<<"50000Rs and more";
+gotoxy(3,11);cout<<"GO BACK!";
+gotoxy(1,5);cout<<arr;
+for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		if(ch!='\r')
+		{
+		gotoxy(1,pos);cout<<" ";
+		if(pos!=5)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=11;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		if(pos!=11)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=5;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		}
+		}
+
+
+if(pos==5)
+{
+	budget_table(0,10000);
+}
+else if(pos==6)
+{
+	budget_table(10000,20000);
+}
+else if(pos==7)
+{
+	budget_table(20000,30000);
+}
+else if(pos==8)
+{
+	budget_table(30000,40000);
+}
+else if(pos==9)
+{
+	budget_table(40000,50000);
+}
+else if(pos==10)
+{
+	budget_table(50000,100000);
+}
+else
+	search();
+}        											//budget() close
+
+
+//Displays all phones based on the budget
+void budget_table(long int a,long int b)           //budget_table() open
+{
+clrscr();
+char A[20];
+for(int i=0;i<20;i++)
+	A[i]=0;
+fstream file;
+file.open("pho",ios::binary|ios::in|ios::out|ios::beg|ios::ate);
+file.seekg(sizeof(mob));
+file.seekp(sizeof(mob));
+gotoxy(13,1);cout<<tlc;
+gotoxy(22,1);cout<<tj;
+gotoxy(13,2);cout<<dvl;
+for(i=14;i<=57;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(21,1);cout<<tj;
+gotoxy(57,1);cout<<tj;
+gotoxy(65,1);cout<<trc;
+for(i=2;i<=3;i++)
+{
+gotoxy(65,i);cout<<dvl;
+}
+gotoxy(13,3);cout<<lj;
+gotoxy(65,3);cout<<rj;
+gotoxy(57,3);cout<<cj;
+gotoxy(21,3);cout<<cj;
+gotoxy(21,2);cout<<dvl;
+gotoxy(57,2);cout<<dvl;
+for(i=58;i<65;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(15,2);cout<<"S.No";
+gotoxy(23,2);cout<<"Name";
+gotoxy(59,2);cout<<"Price";
+int p=4;
+while(file.read((char *)&m1,sizeof(m1)))
+{
+	if(m1.price>a && m1.price<b)
+	{
+		gotoxy(13,p);cout<<dvl;
+		gotoxy(21,p);cout<<dvl;
+		gotoxy(57,p);cout<<dvl;
+		gotoxy(65,p);cout<<dvl;
+		gotoxy(15,p);cout<<p-3;
+		gotoxy(23,p);cout<<m1.brand<<" "<<m1.name;
+		gotoxy(59,p);cout<<m1.price;
+		A[p]=m1.sno;
+		p++;
+		delay(300);
+	}
+}
+file.clear();
+file.close();
+if(p!=4)
+{
+gotoxy(13,p);cout<<blc;
+for(i=14;i<57;i++)
+{
+gotoxy(i,p),cout<<dhl;
+}
+gotoxy(21,p);cout<<bj;
+gotoxy(57,p);cout<<bj;
+for(i=58;i<65;i++)
+{
+gotoxy(i,p);cout<<dhl;
+}
+cout<<brc;
+gotoxy(2,p+5);cout<<"Select 1 phone..";
+char ch='\0';
+gotoxy(11,4);cout<<arr;
+int pos=4;
+		for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		gotoxy(11,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=p-1;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		if(pos!=p-1)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=4;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		}
+textmode(C80);
+fstream file("pho",ios::binary|ios::out|ios::in|ios::ate);
+file.seekg(0,ios::beg);
+file.seekp(0,ios::beg);
+while(file.read((char *)&m1,sizeof(m1)))
+{
+if(A[pos]==m1.sno)
+	m1.displayspecs();
+}
+file.clear();
+file.close();
+}
+else
+{
+clrscr();
+cout<<endl<<"  There are no phones in this range"<<endl;
+cout<<endl<<"  Going back..";
+delay(2000);
+budget();
+}
+}											   //budget_table() close
+//Search of phones based on brand
+void brand()
+{
+textmode(C80);
+int pos=4;
+char ch='\0';
+char n[50];
+clrscr();
+cout<<endl<<"  Which brand do you like to choose?"<<endl;
+gotoxy(3,4);cout<<"Apple";
+gotoxy(3,5);cout<<"Samsung";
+gotoxy(3,6);cout<<"Nokia";
+gotoxy(3,7);cout<<"HTC";
+gotoxy(3,8);cout<<"Motorola";
+gotoxy(3,9);cout<<"Sony";
+gotoxy(3,10);cout<<"Lenovo";
+gotoxy(3,11);cout<<"Micromax";
+gotoxy(3,12);cout<<"Other";
+gotoxy(3,13);cout<<"BACK!";
+gotoxy(1,4);cout<<arr;
+for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		if(ch!='\r')
+		{
+		gotoxy(1,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=13;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		if(pos!=13)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=4;
+			gotoxy(1,pos);cout<<arr;
+			}
+		}
+		}
+		}
+
+if(pos==4)
+{
+	strcpy(n,"Apple");
+	brand_table(n);
+}
+else if(pos==5)
+{
+	strcpy(n,"Samsung");
+	brand_table(n);
+}
+else if(pos==6)
+{
+	strcpy(n,"Nokia");
+	brand_table(n);
+}
+else if(pos==7)
+{
+	strcpy(n,"HTC");
+	brand_table(n);
+}
+else if(pos==8)
+{
+	strcpy(n,"Motorola");
+	brand_table(n);
+}
+else if(pos==9)
+{
+	strcpy(n,"Sony");
+	brand_table(n);
+}
+else if(pos==10)
+{
+	strcpy(n,"Lenovo");
+	brand_table(n);
+}
+else if(pos==11)
+{
+	strcpy(n,"Micromax");
+	brand_table(n);
+}
+else if(pos==12)
+{
+	clrscr();
+	cout<<"Enter the brand name-"<<endl;
+	gets(n);
+	brand_table(n);
+}
+else
+	search();
+}
+//Displays phones of a particular brand
+void brand_table(char n[])
+{
+clrscr();
+char A[20];
+for(int i=0;i<20;i++)
+	A[i]=0;
+fstream file;
+file.open("pho",ios::binary|ios::in|ios::out|ios::beg|ios::ate);
+file.seekg(sizeof(mob));
+file.seekp(sizeof(mob));
+gotoxy(13,1);cout<<tlc;
+gotoxy(22,1);cout<<tj;
+gotoxy(13,2);cout<<dvl;
+for(i=14;i<=57;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(21,1);cout<<tj;
+gotoxy(57,1);cout<<tj;
+gotoxy(65,1);cout<<trc;
+for(i=2;i<=3;i++)
+{
+gotoxy(65,i);cout<<dvl;
+}
+gotoxy(13,3);cout<<lj;
+gotoxy(65,3);cout<<rj;
+gotoxy(57,3);cout<<cj;
+gotoxy(21,3);cout<<cj;
+gotoxy(21,2);cout<<dvl;
+gotoxy(57,2);cout<<dvl;
+for(i=58;i<65;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(15,2);cout<<"S.No";
+gotoxy(23,2);cout<<"Name";
+gotoxy(59,2);cout<<"Price";
+int p=4;
+while(file.read((char *)&m1,sizeof(m1)))
+{
+
+	if(strcmpi(n,m1.brand)==0)
+	{
+	gotoxy(13,p);cout<<dvl;
+	gotoxy(21,p);cout<<dvl;
+	gotoxy(57,p);cout<<dvl;
+	gotoxy(65,p);cout<<dvl;
+	gotoxy(15,p);cout<<p-3;
+	gotoxy(23,p);cout<<m1.brand<<" "<<m1.name;
+	gotoxy(59,p);cout<<m1.price;
+	A[p]=m1.sno;
+	p++;
+	delay(300);
+	}
+}
+file.clear();
+file.close();
+if(p!=4)
+{
+gotoxy(13,p);cout<<blc;
+for(i=14;i<57;i++)
+{
+gotoxy(i,p),cout<<dhl;
+}
+gotoxy(21,p);cout<<bj;
+gotoxy(57,p);cout<<bj;
+for(i=58;i<65;i++)
+{
+gotoxy(i,p);cout<<dhl;
+}
+cout<<brc;
+
+gotoxy(2,p+5);cout<<"Select 1 "<<n<<" phone..";
+
+char ch='\0';
+gotoxy(11,4);cout<<arr;
+int pos=4;
+		for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		gotoxy(11,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=p-1;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		if(pos!=p-1)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=4;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		}
+textmode(C80);
+fstream file("pho",ios::binary|ios::out|ios::in|ios::beg);
+file.seekg(0,ios::beg);
+file.seekp(0,ios::beg);
+while(file)
+{
+file.read((char *)&m1,sizeof(m1));
+if(A[pos]==m1.sno)
+	m1.displayspecs();
+}
+file.clear();
+file.close();
+}
+else
+{
+clrscr();
+cout<<endl<<"  There are no phones available of this operating system"<<endl;
+cout<<endl<<"  Going back..";
+delay(2000);
+brand();
+}
+}
+//Displayspecs(), mob class function expanded outline
+void mob::displayspecs()                    //displayspecs() outline open
+{
+delay(500);
+clrscr();
+textmode(C40);
+gotoxy(12,13);
+cout<<"   PROCESSING: ";
+int i,k;
+for(i=0;i<5;i++)
+{
+delay(100);
+gotoxy(28,13);
+cout<<"/";
+cout<<". ";
+delay(100);
+gotoxy(28,13);
+cout<<"\\";
+cout<<"..";
+}
+
+clrscr();
+textmode(C80);
+gotoxy(13,1);cout<<tlc;
+for(i=14;i<=69;i++)
+{
+gotoxy(i,1);
+cout<<dhl;
+}
+gotoxy(43,1);cout<<tj;
+gotoxy(69,1);cout<<trc;
+for(i=2;i<=15;i++)
+{
+gotoxy(69,i);cout<<dvl;
+}
+gotoxy(13,16);cout<<blc;
+for(i=14;i<=69;i++)
+{
+gotoxy(i,16);
+cout<<dhl;
+}
+gotoxy(43,16);cout<<bj;
+gotoxy(69,16);cout<<brc;
+for(i=2;i<=15;i++)
+{
+gotoxy(13,i);
+cout<<dvl;
+gotoxy(43,i);
+cout<<dvl;
+gotoxy(69,i);
+cout<<dvl;
+}
+for(i=2;i<=14;i+=2)
+{
+gotoxy(38,i);
+cout<<":";
+}
+gotoxy(14,2);cout<<" Phone";gotoxy(45,2);cout<<m1.name;
+gotoxy(13,3);cout<<lj;for(i=1;i<=29;i++)cout<<dhl;cout<<cj;for(i=0;i<=24;i++)cout<<dhl;cout<<rj;
+gotoxy(14,4);cout<<" Brand";gotoxy(45,4);cout<<m1.brand;
+gotoxy(14,6);cout<<" Camera";gotoxy(45,6);cout<<m1.cam<<"MP";
+gotoxy(14,8);cout<<" Operating System";gotoxy(45,8);cout<<m1.OS<<" "<<m1.ver;
+gotoxy(14,10);cout<<" Memory(RAM,Internal)";gotoxy(45,10);cout<<m1.RAM<<","<<m1.intmem;
+gotoxy(14,12);cout<<" Battery(mAh)";gotoxy(45,12);cout<<m1.battery;
+gotoxy(14,14);cout<<" Processor";gotoxy(45,14);
+	if(strlen(m1.proc)>=25)
+	{
+		for(i=0;i<24;i++)
+		cout<<m1.proc[i];
+		gotoxy(45,15);
+		for(i=24;i<=strlen(m1.proc);i++)
+		cout<<m1.proc[i];
+	}
+	else
+	{
+	cout<<m1.proc;
+	}
+char c='y';
+gotoxy(2,18);cout<<"Do you wanna buy "<<m1.name<<" ?"<<endl;
+char choice='\0';
+gotoxy(2,20);cout<<"Yes";gotoxy(30,20);cout<<"No";
+int pos1=1;
+gotoxy(pos1,20);cout<<arr;
+for(i=1;choice!='\r';i++)
+{
+gotoxy(79,24);
+choice=getch();
+gotoxy(pos1,20);cout<<" ";
+
+	if(choice==75||choice==77)
+	{
+
+		if(pos1==1)
+		{pos1=29;
+		c='n';
+		}
+		else
+		{
+		gotoxy(29,20);cout<<" ";
+		pos1=1;
+		c='y';}
+
+		gotoxy(pos1,20);cout<<arr;
+	}
+}
+if(c=='y')
+{
+	cart(m1.name,m1.price);
+	shop();
+}
+else
+	search();
+}        						    				 //displayspecs() close
+
+//The Shopping of accessories function
+void displayacc()                                    //displayacc() open
+{
+clrscr();
+acc A;
+int i;
+fstream file;
+file.open("ACC",ios::binary|ios::in|ios::out|ios::beg|ios::ate);
+file.seekg(sizeof(a1));
+file.seekp(sizeof(a1));
+gotoxy(13,1);cout<<tlc;
+gotoxy(22,1);cout<<tj;
+gotoxy(13,2);cout<<dvl;
+for(i=14;i<=57;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(21,1);cout<<tj;
+gotoxy(57,1);cout<<tj;
+gotoxy(65,1);cout<<trc;
+for(i=2;i<=3;i++)
+{
+gotoxy(65,i);cout<<dvl;
+}
+gotoxy(13,3);cout<<lj;
+gotoxy(65,3);cout<<rj;
+gotoxy(57,3);cout<<cj;
+gotoxy(21,3);cout<<cj;
+gotoxy(21,2);cout<<dvl;
+gotoxy(57,2);cout<<dvl;
+for(i=58;i<65;i++)
+{
+gotoxy(i,1);cout<<dhl;
+gotoxy(i,3);cout<<dhl;
+}
+gotoxy(15,2);cout<<"S.No";
+gotoxy(23,2);cout<<"Name";
+gotoxy(59,2);cout<<"Price";
+int p=4;
+while(file.read((char *)&a1,sizeof(a1)))
+{
+gotoxy(13,p);cout<<dvl;
+gotoxy(21,p);cout<<dvl;
+gotoxy(57,p);cout<<dvl;
+gotoxy(65,p);cout<<dvl;
+gotoxy(15,p);cout<<a1.ino;
+gotoxy(23,p);cout<<a1.item;
+gotoxy(59,p);cout<<a1.price;
+p++;
+delay(300);
+}
+file.clear();
+file.close();
+if(p!=4)
+{
+gotoxy(13,p);cout<<blc;
+for(i=14;i<57;i++)
+{
+gotoxy(i,p),cout<<dhl;
+}
+gotoxy(21,p);cout<<bj;
+gotoxy(57,p);cout<<bj;
+for(i=58;i<65;i++)
+{
+gotoxy(i,p);cout<<dhl;
+}
+cout<<brc;
+gotoxy(2,p+5);cout<<"Select 1 accessory!";
+char ch='\0';
+gotoxy(11,4);cout<<arr;
+int pos=4;
+		for(int i=0;ch!='\r';i++)
+		{
+		gotoxy(79,24);
+		ch=getch();
+		gotoxy(11,pos);cout<<" ";
+		if(pos!=4)
+		{
+			if(ch==72)
+			{
+			pos--;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==72)
+			{
+			pos=p-1;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		if(pos!=p-1)
+		{
+			if(ch==80)
+			{
+			pos++;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		else
+		{
+			if(ch==80)
+			{
+			pos=4;
+			gotoxy(11,pos);cout<<arr;
+			}
+		}
+		}
+textmode(C80);
+fstream file("ACC",ios::binary|ios::out|ios::in|ios::beg);
+file.seekg(0,ios::beg);
+file.seekp(0,ios::beg);
+while(file.read((char *)&A,sizeof(A)))
+{
+if(A.ino==(pos-3))
+	a1=A;
+}
+file.clear();
+file.close();
+delay(500);
+char c='y';
+gotoxy(2,p+5);cout<<"Do you wanna buy "<<a1.item<<" ?"<<endl;
+char choice='\0';
+gotoxy(2,p+7);cout<<"Yes";gotoxy(30,p+7);cout<<"No";
+int pos1=1;
+gotoxy(pos1,p+7);cout<<arr;
+for(i=1;choice!='\r';i++)
+{
+gotoxy(79,24);
+choice=getch();
+gotoxy(pos1,p+7);cout<<" ";
+
+	if(choice==75||choice==77)
+	{
+
+		if(pos1==1)
+		{
+		pos1=29;
+		c='n';
+		}
+		else
+		{
+		gotoxy(29,p+7);cout<<" ";
+		pos1=1;
+		c='y';
+		}
+
+		gotoxy(pos1,p+7);cout<<arr;
+	}
+}
+if(c=='y')
+{
+	cart(a1.item,a1.price);
+	shop();
+}
+else
+	shop();
+}
+getch();
+}
+//Function for the start screen
+void start()                                         //start() open
+{
+textmode(C4350);
+textbackground(7);
+char blk[3]={219};
+clrscr();
+int i,k,j,n;
+textbackground(BLACK);
+textcolor(RED+BLINK);
+char c;
+c=getch();
+switch(c)
+{case '0':exit(0);break;case '2':number2++;shop();break;case '1':number2++;main();}
+for(i=1,k=6,n=1;n<=15;n++,i++,k++)         // for S
+{
+gotoxy(i,1);cprintf(blk);
+if(i<=6)
+{gotoxy(1,i);cprintf(blk);}
+gotoxy(i,6);cprintf(blk);
+if(i<=6)
+{gotoxy(15,k);cprintf(blk);}
+gotoxy(i,12);cprintf(blk);
+}
+
+
+
+		gotoxy(17,1);                                  //for M
+
+		for(i=18,j=1;j<=6;i++,j++)
+		{gotoxy(i,j);cprintf(blk);}
+		for(;j>=1;i++,j--)
+		{gotoxy(i,j);cprintf(blk);}
+		for(i=1;i<=12;i++)
+		{
+		gotoxy(17,i);cprintf(blk);
+		gotoxy(31,i);cprintf(blk);
+		}
+
+
+
+gotoxy(33,1);                 				     //for A
+for(i=1;i<=12;i++)
+{
+gotoxy(33,i);cprintf(blk);
+gotoxy(47,i);cprintf(blk);
+}
+for(i=33;i<=47;i++)
+{
+gotoxy(i,1);cprintf(blk);
+gotoxy(i,5);cprintf(blk);
+}
+
+
+		gotoxy(49,1);							//for R
+		for(i=1;i<=12;i++)
+		{gotoxy(49,i);cprintf(blk);}
+		for(i=49;i<=63;i++)
+		{
+		gotoxy(i,1);cprintf(blk);
+		gotoxy(i,6);cprintf(blk);
+		}
+		for(i=1;i<=6;i++)
+		{gotoxy(63,i);cprintf(blk);}
+		for(j=7,i=57;j<=12;j++,i++)
+		{
+		gotoxy(i,j);cprintf(blk);}
+
+
+
+gotoxy(65,1);										//for T
+for(i=1;i<=12;i++)
+{gotoxy(73,i);cprintf(blk);}
+for(i=65;i<=80;i++)
+{gotoxy(i,1);cprintf(blk);}
+
+
+
+int g=11;
+textbackground(BLACK);
+textcolor(GREEN+BLINK);
+
+
+				 gotoxy(28-g,14);
+				 for(i=1;i<=14;i++)cprintf(blk);	//for P
+				 for(i=14;i<=33;i++)
+				 {gotoxy(28-g,i);cprintf(blk);}
+				 for(i=14;i<=24;i++)
+				 {gotoxy(42-g,i);cprintf(blk);}
+				 for(i=28-g;i<=42-g;i++)
+				 {gotoxy(i,24);cprintf(blk);}
+
+
+for(i=44-g;i<=59-g;i++)    	// for I
+{
+gotoxy(i,14);cprintf(blk);
+gotoxy(i,33);cprintf(blk);
+}
+for(i=14;i<=33;i++)
+{gotoxy(51-g,i);cprintf(blk);}
+
+
+
+					for(i=61-g,j=14;i<=80-g;j++,i++)         //for X
+					{gotoxy(i,j);cprintf(blk);}
+					for(i=80-g,j=14;i>=61-g;i--,j++)
+					{gotoxy(i,j);cprintf(blk);}
+
+textbackground(WHITE);
+textcolor(0);
+gotoxy(38,38);cprintf("LOADING");
+gotoxy(30,39);cprintf(stlc);for(i=30;i<=50;i++)cprintf(hl);cprintf(strc);
+gotoxy(30,40);cprintf(vl);gotoxy(52,40);cprintf(vl);
+gotoxy(30,41);cprintf(sblc);for(i=30;i<=50;i++)cprintf(hl);cprintf(sbrc);
+gotoxy(31,40);
+textcolor(1);
+for(i=1;i<=21;i++)
+{
+delay(50);   if(i==10||i==17||i==5)delay(150);
+if(i==20||i==22)delay(550);
+cprintf(blk);
+}
+textcolor(BLUE);
+gotoxy(28,48);cprintf("<PRESS ANY KEY TO CONTINUE>");
+gotoxy(79,49);
+getch();
+}                      					//start() close
+
+
+
